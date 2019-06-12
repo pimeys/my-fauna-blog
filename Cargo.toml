@@ -1,0 +1,21 @@
+[package]
+name = "my-fauna-blog"
+version = "0.1.0"
+authors = ["Julius de Bruijn <bruijn@prisma.io>"]
+edition = "2018"
+
+[dependencies]
+hyper = "0.12"
+http = "0.1"
+log = "0.4"
+lazy_static = "1.2"
+tokio-signal = "0.2"
+pretty_env_logger = "0.3"
+chrono = "0.4"
+tokio = "0.1"
+tokio-threadpool = "0.1"
+futures = "0.1"
+faunadb = { path = "/home/pimeys/code/faunadb-rust/" }
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
