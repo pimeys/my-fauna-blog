@@ -5,6 +5,7 @@ authors = ["Julius de Bruijn <bruijn@prisma.io>"]
 edition = "2018"
 
 [dependencies]
+tower-web = "0.3"
 hyper = "0.12"
 http = "0.1"
 log = "0.4"
