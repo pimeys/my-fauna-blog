@@ -299,7 +299,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "faunadb"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64-serde 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -719,7 +719,7 @@ name = "my-fauna-blog"
 version = "0.1.0"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "faunadb 0.0.7",
+ "faunadb 0.0.8",
  "futures 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.30 (registry+https://github.com/rust-lang/crates.io-index)",

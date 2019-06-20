@@ -1,3 +1,5 @@
+#![recursion_limit = "128"]
+
 #[macro_use]
 extern crate tower_web;
 
@@ -10,6 +12,9 @@ extern crate log;
 // mod error;
 mod migrate;
 mod post;
+mod tag;
+
+pub(crate) mod misc;
 
 //use blog::Blog;
 use faunadb::client::{Client, ClientBuilder};
@@ -17,6 +22,7 @@ use lazy_static::lazy_static;
 use migrate::Migrate;
 use post::Post;
 use std::env;
+use tag::Tag;
 use tower_web::ServiceBuilder;
 
 lazy_static! {
@@ -49,7 +55,11 @@ fn main() {
             let addr = "127.0.0.1:8080".parse().expect("Invalid address");
             info!("Listening on http://{}", addr);
 
-            ServiceBuilder::new().resource(Post).run(&addr).unwrap()
+            ServiceBuilder::new()
+                .resource(Post)
+                .resource(Tag)
+                .run(&addr)
+                .unwrap()
         }
     }
 }
