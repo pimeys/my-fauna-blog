@@ -37,6 +37,32 @@ impl_web! {
                 })
         }
 
+        #[put("/posts/:id")]
+        #[content_type("application/json")]
+        fn update(&self, id: String, body: PostData) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
+            let mut params = UpdateParams::new();
+            params.data(Object::from(body));
+
+            let mut reference = Ref::instance(id);
+            reference.set_class("posts");
+
+            FAUNA
+                .query(Update::new(reference, params))
+                .map_err(|e| {
+                    dbg!(&e);
+                    e
+                })
+                .map(|resp| {
+                    let res = resp.resource;
+
+                    json!({
+                        "id": res.get_reference().unwrap().id,
+                        "title": res["data"]["title"],
+                        "tags": res["data"]["tags"],
+                    })
+                })
+        }
+
         #[get("/posts/:id")]
         #[content_type("application/json")]
         fn find(&self, id: String) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
