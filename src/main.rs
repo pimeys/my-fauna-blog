@@ -7,8 +7,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate log;
 
-// mod blog; let's rethink this
-mod error;
+// mod error;
 mod migrate;
 mod post;
 
