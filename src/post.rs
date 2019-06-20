@@ -1,5 +1,5 @@
 use crate::{error::Error, FAUNA};
-use faunadb::{error::Error as FaunaError, prelude::*};
+use faunadb::{error::Error as FaunaError, prelude::*, FaunaResult};
 use futures::future::Future;
 use serde_json::{json, Value as JsonValue};
 use std::convert::TryFrom;
@@ -18,6 +18,42 @@ pub struct PostData {
 pub struct PostCreated {
     #[web(header)]
     location: String,
+}
+
+#[derive(Debug, Response)]
+#[web(either)]
+pub enum PostResponse {
+    Data(JsonValue),
+    Error(PostError),
+}
+
+#[derive(Debug, Response)]
+pub struct PostError {
+    #[web(status)]
+    status: u16,
+}
+
+impl From<FaunaResult<Response>> for PostResponse {
+    fn from(result: FaunaResult<Response>) -> Self {
+        match result {
+            Ok(resp) => {
+                let res = resp.resource;
+
+                let payload = json!({
+                    "id": res.get_reference().unwrap().id,
+                    "title": res["data"]["title"],
+                    "tags": res["data"]["tags"],
+                });
+
+                PostResponse::Data(payload)
+            }
+            Err(FaunaError::NotFound(_)) => PostResponse::Error(PostError { status: 404 }),
+            Err(e) => {
+                error!("FATAL ERROR: {:?}", e);
+                PostResponse::Error(PostError { status: 500 })
+            }
+        }
+    }
 }
 
 impl_web! {
@@ -39,7 +75,7 @@ impl_web! {
 
         #[put("/posts/:id")]
         #[content_type("application/json")]
-        fn update(&self, id: String, body: PostData) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
+        fn update(&self, id: String, body: PostData) -> impl Future<Item = PostResponse, Error = FaunaError> + Send {
             let mut params = UpdateParams::new();
             params.data(Object::from(body));
 
@@ -48,42 +84,31 @@ impl_web! {
 
             FAUNA
                 .query(Update::new(reference, params))
-                .map_err(|e| {
-                    dbg!(&e);
-                    e
+                .then(|result| {
+                    Ok(PostResponse::from(result))
                 })
-                .map(|resp| {
-                    let res = resp.resource;
+        }
 
-                    json!({
-                        "id": res.get_reference().unwrap().id,
-                        "title": res["data"]["title"],
-                        "tags": res["data"]["tags"],
-                    })
-                })
+        #[delete("/posts/:id")]
+        #[content_type("application/json")]
+        fn delete(&self, id: String) -> impl Future<Item = PostResponse, Error = FaunaError> + Send {
+            let mut reference = Ref::instance(id);
+            reference.set_class("posts");
+
+            FAUNA
+                .query(Delete::new(reference))
+                .then(|result| Ok(PostResponse::from(result)))
         }
 
         #[get("/posts/:id")]
         #[content_type("application/json")]
-        fn find(&self, id: String) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
+        fn find(&self, id: String) -> impl Future<Item = PostResponse, Error = FaunaError> + Send {
             let mut reference = Ref::instance(id);
             reference.set_class("posts");
 
             FAUNA
                 .query(Get::instance(reference))
-                .map_err(|e| {
-                    dbg!(&e);
-                    e
-                })
-                .map(|resp| {
-                    let res = resp.resource;
-
-                    json!({
-                        "id": res.get_reference().unwrap().id,
-                        "title": res["data"]["title"],
-                        "tags": res["data"]["tags"],
-                    })
-                })
+                .then(|result| Ok(PostResponse::from(result)))
         }
     }
 }
