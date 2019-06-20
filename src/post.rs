@@ -1,6 +1,7 @@
 use crate::{error::Error, FAUNA};
 use faunadb::{error::Error as FaunaError, prelude::*};
 use futures::future::Future;
+use serde_json::{json, Value as JsonValue};
 use std::convert::TryFrom;
 
 pub struct Post;
@@ -38,7 +39,7 @@ impl_web! {
 
         #[get("/posts/:id")]
         #[content_type("application/json")]
-        fn find(&self, id: String) -> impl Future<Item = PostData, Error = FaunaError> + Send {
+        fn find(&self, id: String) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
             let mut reference = Ref::instance(id);
             reference.set_class("posts");
 
@@ -49,14 +50,13 @@ impl_web! {
                     e
                 })
                 .map(|resp| {
-                    let mut resource = resp.resource.into_object().unwrap();
-                    let mut data = resource.remove("data").unwrap().into_object().unwrap();
-                    let tags = data.remove("tags").unwrap();
+                    let res = resp.resource;
 
-                    PostData {
-                        title: data.remove("title").and_then(|r| r.into_string()).unwrap(),
-                        tags: tags.map_array(|e| e.into_string()).unwrap(),
-                    }
+                    json!({
+                        "id": res.get_reference().unwrap().id,
+                        "title": res["data"]["title"],
+                        "tags": res["data"]["tags"],
+                    })
                 })
         }
     }
