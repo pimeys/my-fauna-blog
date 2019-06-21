@@ -23,39 +23,17 @@ impl Migrate {
     pub fn create_schema(&mut self) {
         {
             self.run_expr(CreateClass::new(ClassParams::new("posts")));
-
-            let mut params = IndexParams::new("all_posts", Class::find("posts"));
-
-            params.values(vec![
-                IndexValue::field(vec!["ref", "id"]),
-                IndexValue::field(vec!["data", "title"]),
-                IndexValue::field(vec!["data", "age_limit"]),
-            ]);
-
+            let params = IndexParams::new("all_posts", Class::find("posts"));
             self.run_expr(CreateIndex::new(params));
         }
 
         {
             self.run_expr(CreateClass::new(ClassParams::new("tags")));
-
-            let mut params = IndexParams::new("all_tags", Class::find("tags"));
-
-            params.values(vec![
-                IndexValue::field(vec!["ref", "id"]),
-                IndexValue::field(vec!["data", "name"]),
-                IndexValue::field(vec!["data", "post_id"]),
-            ]);
-
+            let params = IndexParams::new("all_tags", Class::find("tags"));
             self.run_expr(CreateIndex::new(params));
 
             let mut params = IndexParams::new("tags_by_post_id", Class::find("tags"));
             params.terms(vec![Term::field(vec!["data", "post_id"])]);
-
-            params.values(vec![
-                IndexValue::field(vec!["ref", "id"]),
-                IndexValue::field(vec!["data", "name"]),
-            ]);
-
             self.run_expr(CreateIndex::new(params));
         }
     }

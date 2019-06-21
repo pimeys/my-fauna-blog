@@ -1,4 +1,4 @@
-use crate::{misc::*, FAUNA};
+use crate::{misc::*, selector::*, FAUNA};
 use faunadb::{error::Error as FaunaError, prelude::*};
 use futures::future::Future;
 use serde_json::{json, Value as JsonValue};
@@ -17,18 +17,18 @@ impl_web! {
         #[get("/posts")]
         #[content_type("application/json")]
         fn index(&self) -> impl Future<Item = JsonValue, Error = FaunaError> + Send {
+            let query = Selector::from_index("all_posts")
+                .fields(vec!["title", "age_limit"])
+                .into_query();
+
             FAUNA
-                .query(Paginate::new(Match::new(Index::find("all_posts"))))
+                .query(query)
                 .map_err(|e| dbg!(e))
                 .map(|resp| {
                     let res = resp.resource;
 
-                    let data: Vec<JsonValue> = res["data"].as_array().unwrap().iter().map(|blog| {
-                        json!({"id": blog[0], "title": blog[1], "age_limit": blog[2]})
-                    }).collect();
-
                     json!({
-                        "data": data,
+                        "data": res["data"],
                         "before": res["before"],
                         "after": res["after"],
                     })

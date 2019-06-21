@@ -1,4 +1,4 @@
-use crate::{misc::*, FAUNA};
+use crate::{misc::*, selector::Selector, FAUNA};
 use faunadb::{error::Error as FaunaError, prelude::*};
 use futures::Future;
 use serde_json::{json, Value as JsonValue};
@@ -22,18 +22,19 @@ impl_web! {
             FAUNA
                 .query(Get::instance(reference))
                 .and_then(move |_| {
+                    let query = Selector::from_index("tags_by_post_id")
+                        .fields(vec!["name"])
+                        .terms(vec![post_id.as_str()])
+                        .into_query();
+
                     FAUNA
-                        .query(Paginate::new(Match::new(Index::find("tags_by_post_id")).with_terms(post_id.as_str())))
+                        .query(query)
                         .map_err(|e| dbg!(e))
-                        .map(|resp| {
+                        .map(move |resp| {
                             let res = resp.resource;
 
-                            let data: Vec<JsonValue> = res["data"].as_array().unwrap().iter().map(|tag| {
-                                json!({"id": tag[0], "name": tag[1]})
-                            }).collect();
-
                             json!({
-                                "data": data,
+                                "data": res["data"],
                                 "before": res["before"],
                                 "after": res["after"],
                             })
